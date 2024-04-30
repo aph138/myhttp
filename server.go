@@ -58,7 +58,11 @@ func (s *Server) StartWithGracefulShutdown(ctx context.Context, fn func() error)
 		}
 		close(shutdown)
 	}()
-
+	go func() {
+		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			e <- err
+		}
+	}()
 	for {
 		select {
 		case <-shutdown:
