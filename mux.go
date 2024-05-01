@@ -44,6 +44,11 @@ func (s *Server) Post(path string, handler Handler) {
 	s.Handle(http.MethodPost, path, handler)
 }
 
-func (s *Server) ServeFile(path string, file http.FileSystem) {
+func (s *Server) ServeFolder(path string, file http.FileSystem) {
 	s.mux.Handle(path, http.StripPrefix(path, http.FileServer(file)))
+}
+func (s *Server) ServeFile(path string, file string) {
+	s.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, file)
+	})
 }

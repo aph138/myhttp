@@ -40,23 +40,24 @@ func WithAddress(add string) Config {
 	}
 }
 
-func (s *Server) StartWithGracefulShutdown(ctx context.Context, fn func() error) error {
+func (s *Server) StartWithGracefulShutdown(t int, ctx context.Context, fn func() error) error {
 	s.srv.Handler = stack(s.middlewares)(s.mux)
 	e := make(chan error, 1)
-	shutdown := make(chan os.Signal, 1)
+	shutdown := make(chan int, 1)
 	go func() {
-		signal.Notify(shutdown, syscall.SIGILL)
-		<-shutdown
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT)
+		<-sig
 		err := fn()
 		if err != nil {
 			e <- err
 		}
-		ctx, cancel := context.WithTimeout(ctx, time.Second*2)
+		ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(t))
 		defer cancel()
 		if err = s.srv.Shutdown(ctx); err != nil {
 			e <- err
 		}
-		close(shutdown)
+		shutdown <- 1
 	}()
 	go func() {
 		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
