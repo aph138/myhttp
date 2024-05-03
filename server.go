@@ -2,6 +2,7 @@ package myhttp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ type Config func(*Server)
 
 type Server struct {
 	srv         *http.Server
-	mux         *http.ServeMux
+	Mux         *Mux
 	middlewares []Middleware
 	logger      *slog.Logger
 	vebose      bool
@@ -27,7 +28,7 @@ func defaultServer() *Server {
 			Addr:    ":9000",
 			Handler: nil,
 		},
-		mux:    &http.ServeMux{},
+		Mux:    NewMux(),
 		logger: slog.Default(),
 		vebose: true,
 	}
@@ -61,9 +62,30 @@ func WithCustomLogger(logger *slog.Logger) Config {
 		s.logger = logger
 	}
 }
+func (s *Server) AddSubRouter(path string, m *Mux) {
+	//TODO:check path
+	if path != "/" {
+		s.Mux.mux.Handle(fmt.Sprintf("%s/", path), http.StripPrefix(path, stack(m.middlewares)(m.mux)))
+	}
+}
+func (s *Server) Handle(method string, path string, handler Handler) {
+	s.Mux.Handle(method, path, handler)
+}
+func (s *Server) Get(path string, handler Handler) {
+	s.Mux.Get(path, handler)
+}
+func (s *Server) Post(path string, handler Handler) {
+	s.Mux.Post(path, handler)
+}
+func (s *Server) ServeFolder(path string, file http.FileSystem) {
+	s.Mux.ServeFolder(path, file)
+}
+func (s *Server) ServeFile(path string, file string) {
+	s.Mux.ServeFile(path, file)
+}
 func (s *Server) StartWithGracefulShutdown(t int, ctx context.Context, fn func() error) error {
 	s.info("start server with graceful shutdown fucntion on " + s.srv.Addr)
-	s.srv.Handler = stack(s.middlewares)(s.mux)
+	s.srv.Handler = stack(s.middlewares)(s.Mux.mux)
 	e := make(chan error, 1)
 	shutdown := make(chan int, 1)
 	go func() {
@@ -103,6 +125,6 @@ func (s *Server) StartWithGracefulShutdown(t int, ctx context.Context, fn func()
 }
 func (s *Server) Start() error {
 	s.info("starting the server on " + s.srv.Addr)
-	s.srv.Handler = stack(s.middlewares)(s.mux)
+	s.srv.Handler = stack(s.middlewares)(s.Mux.mux)
 	return s.srv.ListenAndServe()
 }

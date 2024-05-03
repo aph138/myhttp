@@ -7,6 +7,17 @@ import (
 	"net/http"
 )
 
+type Mux struct {
+	mux         *http.ServeMux
+	middlewares []Middleware
+}
+
+func NewMux() *Mux {
+	return &Mux{
+		mux: http.NewServeMux(),
+	}
+}
+
 type Handler func(http.ResponseWriter, *http.Request) error
 
 func newHandler(h Handler) http.HandlerFunc {
@@ -34,21 +45,25 @@ type Error struct {
 	Message string
 }
 
-func (s *Server) Handle(method string, path string, handler Handler) {
-	s.mux.HandleFunc(fmt.Sprintf("%s %s", method, path), newHandler(handler))
+func (m *Mux) Handle(method string, path string, handler Handler) {
+	m.mux.HandleFunc(fmt.Sprintf("%s %s", method, path), newHandler(handler))
 }
-func (s *Server) Get(path string, handler Handler) {
-	s.Handle(http.MethodGet, path, handler)
+func (m *Mux) Get(path string, handler Handler) {
+	m.Handle(http.MethodGet, path, handler)
 }
-func (s *Server) Post(path string, handler Handler) {
-	s.Handle(http.MethodPost, path, handler)
+func (m *Mux) Post(path string, handler Handler) {
+	m.Handle(http.MethodPost, path, handler)
 }
 
-func (s *Server) ServeFolder(path string, file http.FileSystem) {
-	s.mux.Handle(path, http.StripPrefix(path, http.FileServer(file)))
+func (m *Mux) ServeFolder(path string, file http.FileSystem) {
+	m.mux.Handle(path, http.StripPrefix(path, http.FileServer(file)))
 }
-func (s *Server) ServeFile(path string, file string) {
-	s.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+func (m *Mux) ServeFile(path string, file string) {
+	m.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, file)
 	})
+}
+
+func (m *Mux) Use(middle Middleware) {
+	m.middlewares = append(m.middlewares, middle)
 }
