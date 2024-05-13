@@ -2,6 +2,7 @@ package myhttp
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -62,6 +63,29 @@ func WithCustomLogger(logger *slog.Logger) Config {
 		s.logger = logger
 	}
 }
+
+func WithIdleTimeOut(time time.Duration) Config {
+	return func(s *Server) {
+		s.srv.IdleTimeout = time
+	}
+}
+
+func WithReadTimeout(time time.Duration) Config {
+	return func(s *Server) {
+		s.srv.ReadTimeout = time
+	}
+}
+func WithWriteTimeout(time time.Duration) Config {
+	return func(s *Server) {
+		s.srv.WriteTimeout = time
+	}
+}
+func WithTLS(tlsConfig *tls.Config) Config {
+	return func(s *Server) {
+		s.srv.TLSConfig = tlsConfig
+	}
+}
+
 func (s *Server) AddSubRouter(path string, m *Mux) {
 	//TODO:check path
 	if path != "/" {
@@ -83,6 +107,13 @@ func (s *Server) ServeFolder(path string, file http.FileSystem) {
 func (s *Server) ServeFile(path string, file string) {
 	s.Mux.ServeFile(path, file)
 }
+
+// you can't add add middleware after starting the server
+func (s *Server) Use(m Middleware) {
+	s.middlewares = append(s.middlewares, m)
+	// s.srv.Handler = m(s.srv.Handler)
+}
+
 func (s *Server) StartWithGracefulShutdown(t int, ctx context.Context, fn func() error) error {
 	s.info("start server with graceful shutdown fucntion on " + s.srv.Addr)
 	s.srv.Handler = stack(s.middlewares)(s.Mux.mux)

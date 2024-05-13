@@ -8,11 +8,6 @@ import (
 
 type Middleware func(http.Handler) http.Handler
 
-func (s *Server) Use(m Middleware) {
-	s.middlewares = append(s.middlewares, m)
-	// s.srv.Handler = m(s.srv.Handler)
-}
-
 func stack(m []Middleware) Middleware {
 	return func(h http.Handler) http.Handler {
 		for i := len(m) - 1; i >= 0; i-- {

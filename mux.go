@@ -64,6 +64,7 @@ func (m *Mux) ServeFile(path string, file string) {
 	})
 }
 
+// you can't add middleware after calling AddSubRouter
 func (m *Mux) Use(middle Middleware) {
 	m.middlewares = append(m.middlewares, middle)
 }
