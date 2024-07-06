@@ -1,6 +1,7 @@
 package myhttp
 
 import (
+	"context"
 	"crypto/tls"
 	"log/slog"
 	"time"
@@ -43,5 +44,18 @@ func WithWriteTimeout(time time.Duration) Config {
 func WithTLS(tlsConfig *tls.Config) Config {
 	return func(s *Server) {
 		s.srv.TLSConfig = tlsConfig
+	}
+}
+
+func WithMultipartMaxSize(size int) Config {
+	return func(s *Server) {
+		s.multiparMaxtSize = size
+	}
+}
+
+func WithGacefulShutdown(ctx context.Context) Config {
+	return func(s *Server) {
+		s.ctx = ctx
+		s.graceful = true
 	}
 }

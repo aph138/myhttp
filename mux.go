@@ -18,20 +18,25 @@ func NewMux() *Mux {
 	}
 }
 
-type Handler func(http.ResponseWriter, *http.Request) error
+type Handler func(c *Context) error
 
 func newHandler(h Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := h(w, r); err != nil {
+		c := Context{
+			Writer:  w,
+			Request: r,
+		}
+		if err := h(&c); err != nil {
 			if e, ok := err.(*Error); ok {
-				WriteJson(w, e.Status, e.Message)
+				writeJson(w, e.Status, e.Message)
 			} else {
+				//TODO
 				log.Printf("http error: %s\n", err.Error())
 			}
 		}
 	}
 }
-func WriteJson(w http.ResponseWriter, status int, v any) error {
+func writeJson(w http.ResponseWriter, status int, v any) error {
 	w.WriteHeader(status)
 	w.Header().Add("ContentType", "application/json")
 	return json.NewEncoder(w).Encode(v)

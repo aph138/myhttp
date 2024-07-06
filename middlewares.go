@@ -36,3 +36,9 @@ func (r *responseWriter) WriteHeader(s int) {
 	r.ResponseWriter.WriteHeader(s)
 	r.StatusCode = s
 }
+func (s *Server) maxSizeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, int64(s.multiparMaxtSize))
+		next.ServeHTTP(w, r)
+	})
+}
