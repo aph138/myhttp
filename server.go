@@ -2,7 +2,6 @@ package myhttp
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,8 +10,6 @@ import (
 	"syscall"
 	"time"
 )
-
-type Config func(*Server)
 
 type Server struct {
 	srv         *http.Server
@@ -35,12 +32,6 @@ func defaultServer() *Server {
 	}
 }
 
-func Quite() Config {
-	return func(s *Server) {
-		s.vebose = false
-	}
-}
-
 func (s *Server) info(msg string) {
 	if s.vebose {
 		s.logger.Info(msg)
@@ -52,38 +43,6 @@ func NewServer(c ...Config) *Server {
 		i(srv)
 	}
 	return srv
-}
-func WithAddress(add string) Config {
-	return func(s *Server) {
-		s.srv.Addr = add
-	}
-}
-func WithCustomLogger(logger *slog.Logger) Config {
-	return func(s *Server) {
-		s.logger = logger
-	}
-}
-
-func WithIdleTimeOut(time time.Duration) Config {
-	return func(s *Server) {
-		s.srv.IdleTimeout = time
-	}
-}
-
-func WithReadTimeout(time time.Duration) Config {
-	return func(s *Server) {
-		s.srv.ReadTimeout = time
-	}
-}
-func WithWriteTimeout(time time.Duration) Config {
-	return func(s *Server) {
-		s.srv.WriteTimeout = time
-	}
-}
-func WithTLS(tlsConfig *tls.Config) Config {
-	return func(s *Server) {
-		s.srv.TLSConfig = tlsConfig
-	}
 }
 
 func (s *Server) AddSubRouter(path string, m *Mux) {
